@@ -156,20 +156,20 @@ st.write(f"**❓ {current_q}**")
 
 query = st.text_area("💻 Write your SQL query here:", key="user_query", height=100)
 run_btn = st.button("▶️ Run Query")
-ans_btn = st.button("💡 Show Answer (15s)")
+# ans_btn = st.button("💡 Show Answer (15s)")
 
-if ans_btn:
-    st.session_state.show_answer = True
-    st.session_state.show_time = time.time()
+# if ans_btn:
+#     st.session_state.show_answer = True
+#     st.session_state.show_time = time.time()
 
-if st.session_state.show_answer:
-    placeholder = st.empty()
-    with placeholder:
-        st.code(current_ans, language="sql")
-    elapsed = time.time() - st.session_state.show_time
-    if elapsed > 15:
-        placeholder.empty()
-        st.session_state.show_answer = False
+# if st.session_state.show_answer:
+#     placeholder = st.empty()
+#     with placeholder:
+#         st.code(current_ans, language="sql")
+#     elapsed = time.time() - st.session_state.show_time
+#     if elapsed > 15:
+#         placeholder.empty()
+#         st.session_state.show_answer = False
 
 if run_btn:
     try:
