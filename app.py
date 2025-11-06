@@ -11,7 +11,7 @@ st.write("Test your SQL skills! Choose difficulty, answer queries, and check res
 # --------------------- DATABASE SETUP --------------------- #
 @st.cache_resource
 def create_sample_db():
-    conn = sqlite3.connect(":memory:")
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
     cur = conn.cursor()
 
     cur.executescript("""
@@ -66,6 +66,7 @@ def create_sample_db():
     """)
     conn.commit()
     return conn
+
 
 conn = create_sample_db()
 # --------------------- SHOW DATABASE TABLES --------------------- #
