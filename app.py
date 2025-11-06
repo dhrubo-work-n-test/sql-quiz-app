@@ -73,7 +73,6 @@ def init_db():
     return conn
 
 conn = init_db()
-cursor = conn.cursor()
 
 # -----------------------------
 # QUESTION BANK
@@ -103,65 +102,93 @@ QUESTIONS = {
 }
 
 # -----------------------------
-# FUNCTION: Timed Answer Display
+# STREAMLIT STATE SETUP
 # -----------------------------
-def timed_answer(question_text, answer_sql, key):
-    st.write(f"#### ❓ {question_text}")
-    col1, col2 = st.columns([2, 1])
-    user_query = col1.text_area("💻 Write your SQL query here:", key=f"query_{key}", height=100)
-    run = col1.button("▶️ Run Query", key=f"run_{key}")
-
-    # Answer Button
-    show_ans = col2.button("💡 Show Answer", key=f"ans_{key}")
-
-    if show_ans:
-        st.session_state[key] = True
-        st.session_state[f"{key}_time"] = time.time()
-
-    if st.session_state.get(key):
-        placeholder = st.empty()
-        with placeholder:
-            st.code(answer_sql, language="sql")
-        elapsed = time.time() - st.session_state[f"{key}_time"]
-        if elapsed > 15:
-            placeholder.empty()
-            st.session_state[key] = False
-
-    # Run query
-    if run:
-        try:
-            result = pd.read_sql_query(user_query, conn)
-            st.success("✅ Query executed successfully!")
-            st.dataframe(result)
-        except Exception as e:
-            st.error(f"⚠️ Error: {e}")
+if "mode" not in st.session_state:
+    st.session_state.mode = "Easy"
+if "q_index" not in st.session_state:
+    st.session_state.q_index = 0
+if "show_answer" not in st.session_state:
+    st.session_state.show_answer = False
+if "show_time" not in st.session_state:
+    st.session_state.show_time = None
 
 # -----------------------------
-# PAGE CONTENT
+# APP HEADER
 # -----------------------------
 st.title("🧠 SQL Practice & Mock Test Game")
-st.markdown("Write SQL queries, check results, and reveal correct answers (visible for 15 seconds).")
+st.markdown("Practice writing SQL queries step-by-step. You’ll see one question at a time. Show answers (visible for 15s).")
 
-# Dropdown for mode selection
-mode = st.selectbox("Select Difficulty Level", ["Easy", "Advanced", "Mock"])
+# -----------------------------
+# MODE SELECTION
+# -----------------------------
+mode = st.selectbox("Select Difficulty Level", ["Easy", "Advanced", "Mock"], key="mode_select")
 
-# Display Tables
+if mode != st.session_state.mode:
+    st.session_state.mode = mode
+    st.session_state.q_index = 0
+
+questions = QUESTIONS[st.session_state.mode]
+total = len(questions)
+current_q, current_ans = questions[st.session_state.q_index]
+
+# -----------------------------
+# SHOW TABLES
+# -----------------------------
 st.subheader("📋 Reference Tables")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.caption("Students Table")
-    st.dataframe(pd.read_sql_query("SELECT * FROM Students;", conn))
+    st.caption("Students")
+    st.dataframe(pd.read_sql_query("SELECT * FROM Students", conn))
 with col2:
-    st.caption("Courses Table")
-    st.dataframe(pd.read_sql_query("SELECT * FROM Courses;", conn))
+    st.caption("Courses")
+    st.dataframe(pd.read_sql_query("SELECT * FROM Courses", conn))
 with col3:
-    st.caption("Enrollments Table")
-    st.dataframe(pd.read_sql_query("SELECT * FROM Enrollments;", conn))
-
+    st.caption("Enrollments")
+    st.dataframe(pd.read_sql_query("SELECT * FROM Enrollments", conn))
 st.divider()
 
-# Display selected questions
-st.header(f"🏁 {mode} Level Questions")
-for i, (q, ans) in enumerate(QUESTIONS[mode], start=1):
-    timed_answer(q, ans, f"{mode}_{i}")
-    st.divider()
+# -----------------------------
+# QUESTION SECTION
+# -----------------------------
+st.subheader(f"🏁 {mode} Level — Question {st.session_state.q_index + 1} of {total}")
+st.write(f"**❓ {current_q}**")
+
+query = st.text_area("💻 Write your SQL query here:", key="user_query", height=100)
+run_btn = st.button("▶️ Run Query")
+ans_btn = st.button("💡 Show Answer (15s)")
+
+if ans_btn:
+    st.session_state.show_answer = True
+    st.session_state.show_time = time.time()
+
+if st.session_state.show_answer:
+    placeholder = st.empty()
+    with placeholder:
+        st.code(current_ans, language="sql")
+    elapsed = time.time() - st.session_state.show_time
+    if elapsed > 15:
+        placeholder.empty()
+        st.session_state.show_answer = False
+
+if run_btn:
+    try:
+        result = pd.read_sql_query(query, conn)
+        st.success("✅ Query executed successfully!")
+        st.dataframe(result)
+    except Exception as e:
+        st.error(f"⚠️ Error: {e}")
+
+# -----------------------------
+# NEXT BUTTON
+# -----------------------------
+st.divider()
+col_prev, col_next = st.columns([1, 1])
+with col_prev:
+    if st.session_state.q_index > 0 and st.button("⬅️ Previous Question"):
+        st.session_state.q_index -= 1
+with col_next:
+    if st.session_state.q_index < total - 1 and st.button("➡️ Next Question"):
+        st.session_state.q_index += 1
+    elif st.session_state.q_index == total - 1:
+        st.info("🎉 You've completed all questions in this section!")
