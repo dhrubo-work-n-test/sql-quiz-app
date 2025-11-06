@@ -37,7 +37,7 @@ def is_select_only(query: str) -> bool:
 # ---------------------------
 # Build sample DB (SQLite)
 # ---------------------------
-@st.experimental_singleton
+@st.cache_resource
 def create_sample_db():
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     cur = conn.cursor()
@@ -216,7 +216,7 @@ QUESTIONS = [
 # ---------------------------
 # Precompute expected results (dataframes)
 # ---------------------------
-@st.experimental_singleton
+@st.cache_resource
 def prepare_reference_results():
     c = create_sample_db()
     refs = {}
