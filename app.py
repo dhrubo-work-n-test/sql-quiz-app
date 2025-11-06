@@ -68,6 +68,27 @@ def create_sample_db():
     return conn
 
 conn = create_sample_db()
+# --------------------- SHOW DATABASE TABLES --------------------- #
+with st.expander("📋 View Database Tables (click to expand)"):
+    st.write("Here are the current tables you can query from:")
+
+    try:
+        students_df = pd.read_sql_query("SELECT * FROM Students;", conn)
+        courses_df = pd.read_sql_query("SELECT * FROM Courses;", conn)
+        enrollments_df = pd.read_sql_query("SELECT * FROM Enrollments;", conn)
+
+        st.subheader("👩‍🎓 Students")
+        st.dataframe(students_df, use_container_width=True)
+
+        st.subheader("📘 Courses")
+        st.dataframe(courses_df, use_container_width=True)
+
+        st.subheader("🧾 Enrollments")
+        st.dataframe(enrollments_df, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Error loading tables: {e}")
+
 
 # --------------------- QUESTION SETS --------------------- #
 EASY = {
