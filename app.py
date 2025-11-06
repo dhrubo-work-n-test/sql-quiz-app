@@ -2,180 +2,154 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="SQL Practice Game 🎯", page_icon="💾", layout="centered")
+st.set_page_config(page_title="SQL Practice & Mock Test", layout="wide")
 
-st.title("🎯 SQL Practice Game")
-st.write("Learn and test your SQL skills interactively, just like HackerRank! 🚀")
+st.title("🧩 SQL Practice & Mock Test – Easy to Advanced")
+st.write("Test your SQL skills! Choose difficulty, answer queries, and check results. "
+         "After 4 wrong attempts, the correct answer will appear.")
 
-# --- DATABASE CREATION ---
+# --------------------- DATABASE SETUP --------------------- #
 @st.cache_resource
 def create_sample_db():
     conn = sqlite3.connect(":memory:")
     cur = conn.cursor()
 
-    # Employee Table
-    cur.execute("""
-    CREATE TABLE Employee (
-        ID INTEGER PRIMARY KEY,
-        Name TEXT,
-        Age INTEGER,
-        Department TEXT,
-        Salary INTEGER,
-        Months INTEGER
+    cur.executescript("""
+    CREATE TABLE Students (
+        student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        city TEXT,
+        marks INT,
+        age INT
     );
-    """)
 
-    employees = [
-        (1, "Amit", 28, "HR", 50000, 12),
-        (2, "Riya", 31, "Finance", 65000, 10),
-        (3, "John", 25, "Tech", 72000, 8),
-        (4, "Sara", 35, "Tech", 80000, 15),
-        (5, "Tom", 27, "HR", 49000, 11),
-    ]
-    cur.executemany("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?);", employees)
-
-    # Station Table
-    cur.execute("""
-    CREATE TABLE Station (
-        ID INTEGER PRIMARY KEY,
-        City TEXT,
-        State TEXT,
-        Population INTEGER
+    CREATE TABLE Courses (
+        course_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_name TEXT,
+        instructor TEXT
     );
+
+    CREATE TABLE Enrollments (
+        enroll_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INT,
+        course_id INT,
+        grade CHAR(1),
+        FOREIGN KEY(student_id) REFERENCES Students(student_id),
+        FOREIGN KEY(course_id) REFERENCES Courses(course_id)
+    );
+
+    INSERT INTO Students (name, city, marks, age) VALUES
+    ('Riya', 'Delhi', 88, 20),
+    ('Aarav', 'Mumbai', 92, 21),
+    ('Neha', 'Pune', 70, 19),
+    ('Kabir', 'Delhi', 85, 22),
+    ('Zara', 'Chennai', 95, 20),
+    ('Anaya', 'Pune', NULL, 21),
+    ('Rohit', 'Delhi', 60, 23),
+    ('Maya', 'Mumbai', 75, 22);
+
+    INSERT INTO Courses (course_name, instructor) VALUES
+    ('Math', 'Dr. Mehta'),
+    ('Science', 'Prof. Rao'),
+    ('English', 'Dr. Singh'),
+    ('History', 'Prof. Das');
+
+    INSERT INTO Enrollments (student_id, course_id, grade) VALUES
+    (1, 1, 'A'),
+    (2, 1, 'B'),
+    (3, 2, 'C'),
+    (4, 3, 'A'),
+    (5, 2, 'A'),
+    (6, 3, 'B'),
+    (7, 4, 'C'),
+    (8, 1, 'B');
     """)
-    stations = [
-        (1, "Delhi", "DL", 18000000),
-        (2, "Mumbai", "MH", 20000000),
-        (3, "Chennai", "TN", 12000000),
-        (4, "Agra", "UP", 6000000),
-        (5, "Bhopal", "MP", 2500000)
-    ]
-    cur.executemany("INSERT INTO Station VALUES (?, ?, ?, ?);", stations)
     conn.commit()
     return conn
 
 conn = create_sample_db()
 
-# --- QUESTION BANK ---
-question_sets = {
-    "Easy": [
-        {
-            "id": 1,
-            "question": "List all employee names in alphabetical order.",
-            "answer": "SELECT Name FROM Employee ORDER BY Name ASC;",
-            "explanation": "ORDER BY sorts results alphabetically."
-        },
-        {
-            "id": 2,
-            "question": "Find the average salary of all employees.",
-            "answer": "SELECT AVG(Salary) AS Average_Salary FROM Employee;",
-            "explanation": "AVG() gives the mean value of a column."
-        },
-        {
-            "id": 3,
-            "question": "Show unique departments from Employee table.",
-            "answer": "SELECT DISTINCT Department FROM Employee;",
-            "explanation": "DISTINCT filters out duplicate values."
-        },
-    ],
-    "Advanced": [
-        {
-            "id": 4,
-            "question": "Find cities that end with vowels (no duplicates).",
-            "answer": "SELECT DISTINCT City FROM Station WHERE City LIKE '%a' OR City LIKE '%e' OR City LIKE '%i' OR City LIKE '%o' OR City LIKE '%u';",
-            "explanation": "LIKE with '%' matches patterns, DISTINCT removes repeats."
-        },
-        {
-            "id": 5,
-            "question": "Find total earnings (Salary * Months) per employee.",
-            "answer": "SELECT Name, (Salary * Months) AS Total_Earnings FROM Employee;",
-            "explanation": "Arithmetic can be used in SELECT to create new columns."
-        },
-        {
-            "id": 6,
-            "question": "Find the difference between highest and lowest population.",
-            "answer": "SELECT MAX(Population) - MIN(Population) AS Difference FROM Station;",
-            "explanation": "MAX and MIN give you range difference."
-        },
-    ],
-    "Mock Test": [
-        {
-            "id": 7,
-            "question": "Find all employees whose salary is greater than the average salary.",
-            "answer": "SELECT Name, Salary FROM Employee WHERE Salary > (SELECT AVG(Salary) FROM Employee);",
-            "explanation": "Subqueries allow comparing a value to an aggregate."
-        },
-        {
-            "id": 8,
-            "question": "Find departments having more than one employee.",
-            "answer": "SELECT Department, COUNT(*) FROM Employee GROUP BY Department HAVING COUNT(*) > 1;",
-            "explanation": "HAVING is used with GROUP BY for aggregate conditions."
-        },
-        {
-            "id": 9,
-            "question": "Find the city with the smallest population.",
-            "answer": "SELECT City FROM Station ORDER BY Population ASC LIMIT 1;",
-            "explanation": "ORDER BY + LIMIT selects the smallest or largest entry."
-        }
-    ]
+# --------------------- QUESTION SETS --------------------- #
+EASY = {
+    "Show all student names and their cities.": "SELECT name, city FROM Students;",
+    "Show all students who live in Delhi.": "SELECT * FROM Students WHERE city = 'Delhi';",
+    "List students whose marks are greater than 80.": "SELECT name, marks FROM Students WHERE marks > 80;",
+    "Find students whose city starts with ‘M’.": "SELECT * FROM Students WHERE city LIKE 'M%';",
+    "Find total number of students.": "SELECT COUNT(*) AS total_students FROM Students;",
+    "Find average marks of all students.": "SELECT AVG(marks) AS avg_marks FROM Students;",
+    "Find maximum and minimum marks.": "SELECT MAX(marks) AS max_marks, MIN(marks) AS min_marks FROM Students;",
+    "Find number of students per city.": "SELECT city, COUNT(*) AS total_students FROM Students GROUP BY city;",
+    "Find students who are from Delhi and have marks above 80.": "SELECT * FROM Students WHERE city='Delhi' AND marks>80;",
+    "Find students who are from either Pune or Mumbai.": "SELECT * FROM Students WHERE city IN ('Pune', 'Mumbai');",
+    "Find students who are not from Delhi.": "SELECT * FROM Students WHERE city <> 'Delhi';",
+    "Find students with marks between 70 and 90.": "SELECT * FROM Students WHERE marks BETWEEN 70 AND 90;",
+    "Get a list of all unique city names and instructor names using UNION.": "SELECT city FROM Students UNION SELECT instructor FROM Courses;"
 }
 
-# --- SESSION STATE TRACKING ---
+ADVANCED = {
+    "Find cities where average marks are above 80.": "SELECT city, AVG(marks) AS avg_marks FROM Students GROUP BY city HAVING AVG(marks) > 80;",
+    "Find how many students have NULL marks.": "SELECT COUNT(*) AS null_marks_count FROM Students WHERE marks IS NULL;",
+    "Show all students with the courses they enrolled in (using JOIN).": "SELECT s.name, c.course_name, e.grade FROM Students s JOIN Enrollments e ON s.student_id = e.student_id JOIN Courses c ON c.course_id = e.course_id;",
+    "Find students who have not enrolled in any course (using LEFT JOIN).": "SELECT s.name FROM Students s LEFT JOIN Enrollments e ON s.student_id = e.student_id WHERE e.enroll_id IS NULL;",
+    "Find all distinct names (student + instructor) who are from Delhi or teach a subject (using UNION).": "SELECT name FROM Students WHERE city='Delhi' UNION SELECT instructor FROM Courses;",
+    "Find total count of all people in both Students and Courses tables combined (using UNION ALL).": "SELECT COUNT(*) FROM (SELECT name FROM Students UNION ALL SELECT instructor FROM Courses) AS all_people;",
+    "List students with marks greater than the average marks of all students.": "SELECT name, marks FROM Students WHERE marks > (SELECT AVG(marks) FROM Students);",
+    "Find the city with the highest number of students.": "SELECT city, COUNT(*) AS total FROM Students GROUP BY city ORDER BY total DESC LIMIT 1;",
+    "Find the student(s) who have the highest marks in each city.": "SELECT s1.name, s1.city, s1.marks FROM Students s1 WHERE marks = (SELECT MAX(s2.marks) FROM Students s2 WHERE s2.city = s1.city);"
+}
+
+MOCK = {
+    "List all students whose marks are more than 75.": "SELECT * FROM Students WHERE marks > 75;",
+    "Find how many students are from each city.": "SELECT city, COUNT(*) AS total_students FROM Students GROUP BY city;",
+    "Display students whose city name ends with ‘i’.": "SELECT * FROM Students WHERE city LIKE '%i';",
+    "Find the highest and lowest marks among all students.": "SELECT MAX(marks), MIN(marks) FROM Students;",
+    "Show all cities where average marks exceed 85.": "SELECT city, AVG(marks) FROM Students GROUP BY city HAVING AVG(marks) > 85;",
+    "Find students who are enrolled in more than one course.": "SELECT student_id, COUNT(*) FROM Enrollments GROUP BY student_id HAVING COUNT(*) > 1;",
+    "List all students and their respective grades using JOIN.": "SELECT s.name, c.course_name, e.grade FROM Students s JOIN Enrollments e ON s.student_id=e.student_id JOIN Courses c ON c.course_id=e.course_id;",
+    "Find the total number of unique instructors and students combined.": "SELECT COUNT(*) FROM (SELECT name FROM Students UNION SELECT instructor FROM Courses) AS all_people;",
+    "Show the name and marks of the top-performing student(s).": "SELECT name, marks FROM Students WHERE marks = (SELECT MAX(marks) FROM Students);",
+    "Display the count of students with NULL marks.": "SELECT COUNT(*) FROM Students WHERE marks IS NULL;"
+}
+
+# --------------------- INTERFACE --------------------- #
+category = st.selectbox("Choose difficulty level:", ["Easy", "Advanced", "Mock Test"])
+
+if category == "Easy":
+    QUESTIONS = EASY
+elif category == "Advanced":
+    QUESTIONS = ADVANCED
+else:
+    QUESTIONS = MOCK
+
+question = st.selectbox("Select a question:", list(QUESTIONS.keys()))
+
 if "attempts" not in st.session_state:
     st.session_state.attempts = {}
-if "last_question" not in st.session_state:
-    st.session_state.last_question = None
 
-# --- DIFFICULTY & QUESTION SELECTION ---
-difficulty = st.selectbox("Select Difficulty Level:", list(question_sets.keys()))
-questions = question_sets[difficulty]
+st.write(f"### 🧠 Question: {question}")
 
-st.subheader(f"🧩 Choose a {difficulty} Question:")
-question_texts = [f"Q{i['id']}. {i['question']}" for i in questions]
-selected = st.selectbox("Select a question:", question_texts)
-selected_q = next(q for q in questions if selected.startswith(f"Q{q['id']}"))
+user_query = st.text_area("✏️ Write your SQL query below:", height=150)
+submit = st.button("Run Query")
 
-# Reset attempts on question switch
-if st.session_state.last_question != selected_q["id"]:
-    st.session_state.attempts[selected_q["id"]] = 0
-    st.session_state.last_question = selected_q["id"]
-
-st.write("### 💡 Your Task:")
-st.info(selected_q["question"])
-user_query = st.text_area("Write your SQL query here:", height=120)
-
-# --- EXECUTE & CHECK ANSWER ---
-if st.button("Run Query 🚀"):
-    qid = selected_q["id"]
-    st.session_state.attempts[qid] += 1
-    attempt_count = st.session_state.attempts[qid]
-
-    st.write(f"🧮 Attempt: {attempt_count}/4")
-
+if submit:
     try:
         df_user = pd.read_sql_query(user_query, conn)
-        df_correct = pd.read_sql_query(selected_q["answer"], conn)
+        df_correct = pd.read_sql_query(QUESTIONS[question], conn)
 
         if df_user.equals(df_correct):
-            st.success("✅ Correct Answer! Great job!")
+            st.success("✅ Correct Answer!")
             st.dataframe(df_user)
-            st.session_state.attempts[qid] = 0  # reset on success
-
+            st.session_state.attempts[question] = 0
         else:
-            st.warning("❌ Not quite right. Try again!")
+            st.error("❌ Incorrect result. Try again.")
             st.dataframe(df_user)
+            st.session_state.attempts[question] = st.session_state.attempts.get(question, 0) + 1
 
-            if attempt_count >= 4:
-                st.error("💡 You've reached 4 attempts. Here's the correct answer:")
-                st.code(selected_q["answer"], language="sql")
-                st.write("### 💬 Explanation:")
-                st.info(selected_q["explanation"])
-                st.write("### 📊 Expected Output:")
+            if st.session_state.attempts[question] >= 4:
+                st.warning("💡 You've tried 4 times! Here's the correct answer:")
+                st.code(QUESTIONS[question])
                 st.dataframe(df_correct)
+                st.session_state.attempts[question] = 0
 
     except Exception as e:
-        st.error(f"⚠️ Error running your query: {e}")
-
-st.markdown("---")
-st.caption("Made with ❤️ for SQL learning by Dhrubo Bhattacharjee")
+        st.error(f"⚠️ Error: {e}")
